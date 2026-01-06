@@ -56,8 +56,6 @@ function createPhonemeUI() {
   // w - わ行
 
   // よく使う音素のリスト
-
-  // よく使う音素のリスト
   var commonPhonemes = ["a", "i", "u", "e", "o", "N", "pau", "sil"];
 
   var phonemeData = [];
@@ -132,11 +130,14 @@ function createPhonemeUI() {
     // 1. よく使う音素を優先（存在するもののみ）
     for (var i = 0; i < commonPhonemes.length; i++) {
       if (phonemeSet[commonPhonemes[i]]) {
-        sortedPhonemes.push(commonPhonemes[i]);
+        sortedPhonemes.push({
+          phoneme: commonPhonemes[i],
+          count: phonemeSet[commonPhonemes[i]].count,
+        });
       }
     }
 
-    // 2. それ以外の音素をアルファベット順に追加
+    // 2. それ以外の音素を出現回数の多い順に追加
     var otherPhonemes = [];
     for (var phoneme in phonemeSet) {
       var isCommon = false;
@@ -147,10 +148,18 @@ function createPhonemeUI() {
         }
       }
       if (!isCommon) {
-        otherPhonemes.push(phoneme);
+        otherPhonemes.push({
+          phoneme: phoneme,
+          count: phonemeSet[phoneme].count,
+        });
       }
     }
-    otherPhonemes.sort();
+
+    // 出現回数の多い順にソート（降順）
+    otherPhonemes.sort(function (a, b) {
+      return b.count - a.count;
+    });
+
     sortedPhonemes = sortedPhonemes.concat(otherPhonemes);
 
     // UI更新：既存のチェックボックスをクリア
@@ -164,7 +173,8 @@ function createPhonemeUI() {
     var colCount = 0;
 
     for (var i = 0; i < sortedPhonemes.length; i++) {
-      var phoneme = sortedPhonemes[i];
+      var phoneme = sortedPhonemes[i].phoneme;
+      var count = sortedPhonemes[i].count;
 
       // 3列ごとに新しい行を作成
       if (colCount === 0) {
@@ -193,7 +203,7 @@ function createPhonemeUI() {
       var label = itemGroup.add(
         "statictext",
         undefined,
-        phoneme + "(" + phonemeSet[phoneme].count + ")"
+        phoneme + "(" + count + ")"
       );
       label.preferredSize.width = 75;
 
