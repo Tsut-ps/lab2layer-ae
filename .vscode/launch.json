@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "extendscript-debug",
+      "request": "attach",
+      "name": "Attach Ae",
+      "engineName": "main",
+      "hostAppSpecifier": "aftereffects-25.0",
+    },
+    {
+      "type": "extendscript-debug",
+      "request": "launch",
+      "name": "Launch Ae",
+      "engineName": "main",
+      "hostAppSpecifier": "aftereffects-25.0",
+    }
+  ]
+}
