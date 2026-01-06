@@ -15,7 +15,7 @@ function createPhonemeUI() {
   fileLabel.preferredSize.width = 60;
 
   var filePathText = fileGroup.add("edittext", undefined, "No file selected");
-  filePathText.preferredSize.width = 250;
+  filePathText.preferredSize.width = 200;
   filePathText.enabled = false;
 
   var browseBtn = fileGroup.add("button", undefined, "Browse...");
@@ -26,11 +26,13 @@ function createPhonemeUI() {
   listGroup.alignChildren = ["fill", "top"];
   listGroup.spacing = 5;
   listGroup.margins = 10;
-  listGroup.preferredSize = [400, 300];
+  listGroup.preferredSize = [380, 320];
 
+  // スクロール可能なグループ
   var scrollGroup = listGroup.add("group");
   scrollGroup.orientation = "column";
   scrollGroup.alignChildren = ["left", "top"];
+  scrollGroup.spacing = 2;
 
   // 母音
   // a, i, u, e, o - 基本母音5つ
@@ -54,6 +56,8 @@ function createPhonemeUI() {
   // w - わ行
 
   // よく使う音素のリスト
+
+  // よく使う音素のリスト
   var commonPhonemes = ["a", "i", "u", "e", "o", "N", "pau", "sil"];
 
   var phonemeData = [];
@@ -63,22 +67,27 @@ function createPhonemeUI() {
   var btnGroup1 = listGroup.add("group");
   btnGroup1.orientation = "row";
   btnGroup1.alignment = "center";
+  btnGroup1.spacing = 5;
 
-  var selectAllBtn = btnGroup1.add("button", undefined, "Select All");
-  var deselectAllBtn = btnGroup1.add("button", undefined, "Deselect All");
-  var selectCommonBtn = btnGroup1.add("button", undefined, "Select Common");
+  var selectAllBtn = btnGroup1.add("button", undefined, "All");
+  selectAllBtn.preferredSize.width = 60;
+  var deselectAllBtn = btnGroup1.add("button", undefined, "None");
+  deselectAllBtn.preferredSize.width = 60;
+  var selectCommonBtn = btnGroup1.add("button", undefined, "Common");
+  selectCommonBtn.preferredSize.width = 70;
 
   // ========== 実行ボタン ==========
   var executeGroup = win.add("group");
   executeGroup.orientation = "row";
   executeGroup.alignment = "center";
+  executeGroup.spacing = 10;
 
   var createBtn = executeGroup.add("button", undefined, "Create Phoneme Layer");
   createBtn.preferredSize.width = 150;
   createBtn.enabled = false;
 
   var setupOpacityBtn = executeGroup.add("button", undefined, "Setup Opacity");
-  setupOpacityBtn.preferredSize.width = 150;
+  setupOpacityBtn.preferredSize.width = 130;
 
   // ========== イベントハンドラ ==========
 
@@ -117,19 +126,60 @@ function createPhonemeUI() {
       }
     }
 
+    // 音素を優先順にソート
+    var sortedPhonemes = [];
+
+    // 1. よく使う音素を優先（存在するもののみ）
+    for (var i = 0; i < commonPhonemes.length; i++) {
+      if (phonemeSet[commonPhonemes[i]]) {
+        sortedPhonemes.push(commonPhonemes[i]);
+      }
+    }
+
+    // 2. それ以外の音素をアルファベット順に追加
+    var otherPhonemes = [];
+    for (var phoneme in phonemeSet) {
+      var isCommon = false;
+      for (var j = 0; j < commonPhonemes.length; j++) {
+        if (phoneme === commonPhonemes[j]) {
+          isCommon = true;
+          break;
+        }
+      }
+      if (!isCommon) {
+        otherPhonemes.push(phoneme);
+      }
+    }
+    otherPhonemes.sort();
+    sortedPhonemes = sortedPhonemes.concat(otherPhonemes);
+
     // UI更新：既存のチェックボックスをクリア
     phonemeData = [];
     for (var i = scrollGroup.children.length - 1; i >= 0; i--) {
       scrollGroup.remove(scrollGroup.children[i]);
     }
 
-    // チェックボックス作成
-    for (var phoneme in phonemeSet) {
-      var cbGroup = scrollGroup.add("group");
-      cbGroup.orientation = "row";
-      cbGroup.alignChildren = ["left", "center"];
+    // チェックボックスを横3列で配置
+    var currentRow = null;
+    var colCount = 0;
 
-      var cb = cbGroup.add("checkbox", undefined, "");
+    for (var i = 0; i < sortedPhonemes.length; i++) {
+      var phoneme = sortedPhonemes[i];
+
+      // 3列ごとに新しい行を作成
+      if (colCount === 0) {
+        currentRow = scrollGroup.add("group");
+        currentRow.orientation = "row";
+        currentRow.alignChildren = ["left", "center"];
+        currentRow.spacing = 5;
+      }
+
+      var itemGroup = currentRow.add("group");
+      itemGroup.orientation = "row";
+      itemGroup.alignChildren = ["left", "center"];
+      itemGroup.spacing = 2;
+
+      var cb = itemGroup.add("checkbox", undefined, "");
       cb.value = false;
 
       // よく使う音素は初期選択
@@ -140,18 +190,23 @@ function createPhonemeUI() {
         }
       }
 
-      var label = cbGroup.add(
+      var label = itemGroup.add(
         "statictext",
         undefined,
-        phoneme + " (" + phonemeSet[phoneme].count + " times)"
+        phoneme + "(" + phonemeSet[phoneme].count + ")"
       );
-      label.preferredSize.width = 200;
+      label.preferredSize.width = 75;
 
       phonemeData.push({
         checkbox: cb,
         phoneme: phoneme,
         data: phonemeSet[phoneme],
       });
+
+      colCount++;
+      if (colCount >= 3) {
+        colCount = 0;
+      }
     }
 
     win.layout.layout(true);
@@ -206,6 +261,11 @@ function createPhonemeUI() {
           });
         }
       }
+    }
+
+    if (selectedPhonemes.length === 0) {
+      alert("Please select at least one phoneme");
+      return;
     }
 
     // 時間順にソート
@@ -265,7 +325,7 @@ function createPhonemeUI() {
     }
 
     if (!phonemeLayerExists) {
-      alert("Phoneme layer not found!");
+      alert("Phoneme layer not found! Please create it first.");
       return;
     }
 
