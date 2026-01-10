@@ -1,3 +1,5 @@
+<img width="1600" height="720" alt="thumb" src="https://github.com/user-attachments/assets/011f1b9f-25db-4ad2-b0dc-7362bbf4f2a7" />
+
 # lab2layer-ae
 
 After Effects 用の音素リップシンクツール
