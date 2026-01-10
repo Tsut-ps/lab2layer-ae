@@ -1,3 +1,10 @@
+/**
+ * lab2layer
+ * @version 0.1.1
+ * @author Tsut-ps
+ * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
+ */
+
 function createPhonemeUI() {
   // ScriptUI パネル作成
   var win = new Window("palette", "Phoneme Layer Generator", undefined);
