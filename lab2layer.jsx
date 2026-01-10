@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.3.0
+ * @version 0.4.0
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -382,14 +382,19 @@ function createPhonemeUI(thisObj) {
         "  }",
         "}",
         "var result = 0;",
+        "var phoneme = null;",
         "if (phonemeLayer && phonemeLayer.marker.numKeys > 0) {",
         "  var marker = phonemeLayer.marker;",
         "  var index = marker.nearestKey(time).index;",
         "  if (marker.key(index).time > time) index--;",
         "  if (index >= 1) {",
-        "    var phoneme = marker.key(index).comment;",
-        '    if ((","+thisLayer.name+",").indexOf(","+phoneme+",") >= 0) result = 100;',
+        "    phoneme = marker.key(index).comment;",
         "  }",
+        "}",
+        "if (phoneme !== null) {",
+        '  if ((","+thisLayer.name+",").indexOf(","+phoneme+",") >= 0) result = 100;',
+        "} else {",
+        '  if ((","+thisLayer.name+",").indexOf(",def,") >= 0) result = 100;',
         "}",
         "result;",
       ];
