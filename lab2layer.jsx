@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.2.0
+ * @version 0.3.0
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -302,31 +302,40 @@ function createPhonemeUI(thisObj) {
       return a.startTime - b.startTime;
     });
 
+    // セリフの開始時間と終了時間を計算（labファイル内の相対時間）
+    var labStartTime = selectedPhonemes[0].startTime;
+    var labEndTime = selectedPhonemes[selectedPhonemes.length - 1].endTime;
+    var duration = labEndTime - labStartTime;
+
+    // 現在の再生位置を取得
+    var currentTime = comp.time;
+
     app.beginUndoGroup("Create Phoneme Layer");
 
-    // 既存のPhonemeレイヤーを削除
-    for (var i = comp.numLayers; i >= 1; i--) {
-      if (comp.layer(i).name === "Phoneme") {
-        comp.layer(i).remove();
-      }
-    }
-
-    // ヌルレイヤー作成
-    var nullLayer = comp.layers.addNull();
+    // ヌルレイヤー作成（現在の再生位置に配置）
+    var nullLayer = comp.layers.addNull(duration);
     nullLayer.name = "Phoneme";
+    nullLayer.startTime = currentTime;
 
-    // マーカー配置
+    // マーカー配置（現在の再生位置からの相対位置）
     for (var i = 0; i < selectedPhonemes.length; i++) {
+      var markerTime =
+        currentTime + (selectedPhonemes[i].startTime - labStartTime);
       var newMarker = new MarkerValue(selectedPhonemes[i].phoneme);
-      nullLayer
-        .property("Marker")
-        .setValueAtTime(selectedPhonemes[i].startTime, newMarker);
+      nullLayer.property("Marker").setValueAtTime(markerTime, newMarker);
     }
 
     app.endUndoGroup();
 
     alert(
-      "Phoneme layer created with " + selectedPhonemes.length + " markers!"
+      "Phoneme layer created with " +
+        selectedPhonemes.length +
+        " markers!\n" +
+        "Duration: " +
+        duration.toFixed(2) +
+        "s at " +
+        currentTime.toFixed(2) +
+        "s"
     );
   };
 
@@ -364,22 +373,25 @@ function createPhonemeUI(thisObj) {
       var layer = layers[i];
 
       var exprLines = [
-        'var phonemeLayer = thisComp.layer("Phoneme");',
-        "var mrkr = phonemeLayer.marker;",
-        "var idx = mrkr.nearestKey(time).index;",
-        "if (mrkr.nearestKey(time).time > time) { idx--; }",
-        "if (idx < 1) { idx = 1; }",
-        "var currentPhoneme = mrkr.key(idx).comment;",
-        'var layerName = thisLayer.name.replace(/\\.[^/.]+$/, "");',
-        'var targetPhonemes = layerName.split(",");',
-        "var isMatch = false;",
-        "for (var i = 0; i < targetPhonemes.length; i++) {",
-        "  if (currentPhoneme == targetPhonemes[i]) {",
-        "    isMatch = true;",
+        "var phonemeLayer = null;",
+        "for (var i = 1; i <= thisComp.numLayers; i++) {",
+        "  var layer = thisComp.layer(i);",
+        '  if (layer.name === "Phoneme" && time >= layer.inPoint && time < layer.outPoint) {',
+        "    phonemeLayer = layer;",
         "    break;",
         "  }",
         "}",
-        "isMatch ? 100 : 0;",
+        "var result = 0;",
+        "if (phonemeLayer && phonemeLayer.marker.numKeys > 0) {",
+        "  var marker = phonemeLayer.marker;",
+        "  var index = marker.nearestKey(time).index;",
+        "  if (marker.key(index).time > time) index--;",
+        "  if (index >= 1) {",
+        "    var phoneme = marker.key(index).comment;",
+        '    if ((","+thisLayer.name+",").indexOf(","+phoneme+",") >= 0) result = 100;',
+        "  }",
+        "}",
+        "result;",
       ];
 
       var expr = exprLines.join("\n");
