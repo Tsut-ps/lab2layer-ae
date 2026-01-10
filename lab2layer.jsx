@@ -1,13 +1,16 @@
 /**
  * lab2layer
- * @version 0.1.1
+ * @version 0.2.0
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
 
-function createPhonemeUI() {
-  // ScriptUI パネル作成
-  var win = new Window("palette", "Phoneme Layer Generator", undefined);
+function createPhonemeUI(thisObj) {
+  // ScriptUI Panelsフォルダから実行された場合はドッカブルパネル、それ以外は別ウィンドウ
+  var win =
+    thisObj instanceof Panel
+      ? thisObj
+      : new Window("palette", "lab2layer", undefined, { resizeable: true });
   win.orientation = "column";
   win.alignChildren = ["fill", "top"];
   win.spacing = 10;
@@ -17,28 +20,33 @@ function createPhonemeUI() {
   var fileGroup = win.add("group");
   fileGroup.orientation = "row";
   fileGroup.alignChildren = ["left", "center"];
+  fileGroup.alignment = ["fill", "top"];
 
   var fileLabel = fileGroup.add("statictext", undefined, "Lab File:");
-  fileLabel.preferredSize.width = 60;
 
   var filePathText = fileGroup.add("edittext", undefined, "No file selected");
-  filePathText.preferredSize.width = 200;
+  filePathText.alignment = ["fill", "center"];
   filePathText.enabled = false;
 
-  var browseBtn = fileGroup.add("button", undefined, "Browse...");
+  var browseBtn = fileGroup.add("button", undefined, "...");
+  browseBtn.preferredSize = [30, 25];
+  browseBtn.alignment = ["right", "center"];
+  browseBtn.helpTip = "Browse for lab file";
 
   // ========== 音素リストグループ ==========
   var listGroup = win.add("panel", undefined, "Select Phonemes");
   listGroup.orientation = "column";
   listGroup.alignChildren = ["fill", "top"];
+  listGroup.alignment = ["fill", "fill"];
   listGroup.spacing = 5;
   listGroup.margins = 10;
-  listGroup.preferredSize = [380, 320];
+  listGroup.minimumSize = [200, 150];
 
   // スクロール可能なグループ
   var scrollGroup = listGroup.add("group");
   scrollGroup.orientation = "column";
-  scrollGroup.alignChildren = ["left", "top"];
+  scrollGroup.alignChildren = ["fill", "top"];
+  scrollGroup.alignment = ["fill", "fill"];
   scrollGroup.spacing = 2;
 
   // 母音
@@ -71,28 +79,30 @@ function createPhonemeUI() {
   // ========== ボタングループ ==========
   var btnGroup1 = listGroup.add("group");
   btnGroup1.orientation = "row";
-  btnGroup1.alignment = "center";
+  btnGroup1.alignment = ["fill", "bottom"];
+  btnGroup1.alignChildren = ["fill", "center"];
   btnGroup1.spacing = 5;
 
   var selectAllBtn = btnGroup1.add("button", undefined, "All");
-  selectAllBtn.preferredSize.width = 60;
+  selectAllBtn.alignment = ["fill", "center"];
   var deselectAllBtn = btnGroup1.add("button", undefined, "None");
-  deselectAllBtn.preferredSize.width = 60;
+  deselectAllBtn.alignment = ["fill", "center"];
   var selectCommonBtn = btnGroup1.add("button", undefined, "Common");
-  selectCommonBtn.preferredSize.width = 70;
+  selectCommonBtn.alignment = ["fill", "center"];
 
   // ========== 実行ボタン ==========
   var executeGroup = win.add("group");
   executeGroup.orientation = "row";
-  executeGroup.alignment = "center";
+  executeGroup.alignment = ["fill", "bottom"];
+  executeGroup.alignChildren = ["fill", "center"];
   executeGroup.spacing = 10;
 
   var createBtn = executeGroup.add("button", undefined, "Create Phoneme Layer");
-  createBtn.preferredSize.width = 150;
+  createBtn.alignment = ["fill", "center"];
   createBtn.enabled = false;
 
   var setupOpacityBtn = executeGroup.add("button", undefined, "Setup Opacity");
-  setupOpacityBtn.preferredSize.width = 130;
+  setupOpacityBtn.alignment = ["fill", "center"];
 
   // ========== イベントハンドラ ==========
 
@@ -187,12 +197,14 @@ function createPhonemeUI() {
       if (colCount === 0) {
         currentRow = scrollGroup.add("group");
         currentRow.orientation = "row";
-        currentRow.alignChildren = ["left", "center"];
+        currentRow.alignment = ["fill", "top"];
+        currentRow.alignChildren = ["fill", "center"];
         currentRow.spacing = 5;
       }
 
       var itemGroup = currentRow.add("group");
       itemGroup.orientation = "row";
+      itemGroup.alignment = ["fill", "center"];
       itemGroup.alignChildren = ["left", "center"];
       itemGroup.spacing = 2;
 
@@ -212,7 +224,7 @@ function createPhonemeUI() {
         undefined,
         phoneme + "(" + count + ")"
       );
-      label.preferredSize.width = 75;
+      label.minimumSize.width = 50;
 
       phonemeData.push({
         checkbox: cb,
@@ -380,8 +392,19 @@ function createPhonemeUI() {
     alert("Completed! Set expression on " + layers.length + " layers.");
   };
 
-  win.center();
-  win.show();
+  // リサイズ対応
+  win.onResizing = win.onResize = function () {
+    this.layout.resize();
+  };
+
+  // パネルの場合はlayout、ウィンドウの場合はcenter+show
+  if (win instanceof Window) {
+    win.center();
+    win.show();
+  } else {
+    win.layout.layout(true);
+    win.layout.resize();
+  }
 }
 
-createPhonemeUI();
+createPhonemeUI(this);
