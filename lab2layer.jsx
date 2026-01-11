@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.7.2
+ * @version 0.7.3
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -58,7 +58,7 @@ undefined,
 
   // 特殊音素
   // N - 撥音（ん）
-  // cl - 促音（っ）の閉鎖部分
+  // cl, Q - 促音（っ）
   // pau - ポーズ（休止）
   // sil - 無音（silence）
   // br - ブレス（息継ぎ）
@@ -75,7 +75,19 @@ undefined,
   // w - わ行
 
   // よく使う音素のリスト
-  var commonPhonemes = ["a", "i", "u", "e", "o", "N", "pau", "sil"];
+  var commonPhonemes = [
+"a",
+"i",
+"u",
+"e",
+"o",
+"N",
+"pau",
+"sil",
+    "cl",
+    "Q",
+    "br",
+];
 
   var phonemeData = [];
   var labFile = null;
