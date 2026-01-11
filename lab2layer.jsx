@@ -25,10 +25,10 @@ function createPhonemeUI(thisObj) {
   var fileLabel = fileSelectGroup.add("statictext", undefined, "Lab File:");
 
   var filePathText = fileSelectGroup.add(
-"edittext",
-undefined,
-"No file selected"
-);
+    "edittext",
+    undefined,
+    "No file selected"
+  );
   filePathText.alignment = ["fill", "center"];
   filePathText.enabled = false;
 
@@ -76,18 +76,18 @@ undefined,
 
   // よく使う音素のリスト
   var commonPhonemes = [
-"a",
-"i",
-"u",
-"e",
-"o",
-"N",
-"pau",
-"sil",
+    "a",
+    "i",
+    "u",
+    "e",
+    "o",
+    "N",
+    "pau",
+    "sil",
     "cl",
     "Q",
     "br",
-];
+  ];
 
   var phonemeData = [];
   var labFile = null;
@@ -342,7 +342,12 @@ undefined,
       }
     }
 
+    // レイアウトを更新
+    phonemeCheckboxGroup.layout.layout(true);
+    phonemeListPanel.layout.layout(true);
     win.layout.layout(true);
+    win.layout.resize();
+
     createBtn.enabled = true;
   };
 
