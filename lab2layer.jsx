@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.7.1
+ * @version 0.7.2
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -17,37 +17,41 @@ function createPhonemeUI(thisObj) {
   win.margins = 16;
 
   // ========== ファイル選択グループ ==========
-  var fileGroup = win.add("group");
-  fileGroup.orientation = "row";
-  fileGroup.alignChildren = ["left", "center"];
-  fileGroup.alignment = ["fill", "top"];
+  var fileSelectGroup = win.add("group");
+  fileSelectGroup.orientation = "row";
+  fileSelectGroup.alignChildren = ["left", "center"];
+  fileSelectGroup.alignment = ["fill", "top"];
 
-  var fileLabel = fileGroup.add("statictext", undefined, "Lab File:");
+  var fileLabel = fileSelectGroup.add("statictext", undefined, "Lab File:");
 
-  var filePathText = fileGroup.add("edittext", undefined, "No file selected");
+  var filePathText = fileSelectGroup.add(
+"edittext",
+undefined,
+"No file selected"
+);
   filePathText.alignment = ["fill", "center"];
   filePathText.enabled = false;
 
-  var browseBtn = fileGroup.add("button", undefined, "...");
+  var browseBtn = fileSelectGroup.add("button", undefined, "...");
   browseBtn.preferredSize = [30, 25];
   browseBtn.alignment = ["right", "center"];
   browseBtn.helpTip = "Browse for lab file";
 
   // ========== 音素リストグループ ==========
-  var listGroup = win.add("panel", undefined, "Select Phonemes");
-  listGroup.orientation = "column";
-  listGroup.alignChildren = ["fill", "top"];
-  listGroup.alignment = ["fill", "fill"];
-  listGroup.spacing = 5;
-  listGroup.margins = 10;
-  listGroup.minimumSize = [200, 150];
+  var phonemeListPanel = win.add("panel", undefined, "Select Phonemes");
+  phonemeListPanel.orientation = "column";
+  phonemeListPanel.alignChildren = ["fill", "top"];
+  phonemeListPanel.alignment = ["fill", "fill"];
+  phonemeListPanel.spacing = 5;
+  phonemeListPanel.margins = 10;
+  phonemeListPanel.minimumSize = [200, 150];
 
-  // スクロール可能なグループ
-  var scrollGroup = listGroup.add("group");
-  scrollGroup.orientation = "column";
-  scrollGroup.alignChildren = ["fill", "top"];
-  scrollGroup.alignment = ["fill", "fill"];
-  scrollGroup.spacing = 2;
+  // ========== 音素チェックボックス ==========
+  var phonemeCheckboxGroup = phonemeListPanel.add("group");
+  phonemeCheckboxGroup.orientation = "column";
+  phonemeCheckboxGroup.alignChildren = ["fill", "top"];
+  phonemeCheckboxGroup.alignment = ["fill", "fill"];
+  phonemeCheckboxGroup.spacing = 2;
 
   // 母音
   // a, i, u, e, o - 基本母音5つ
@@ -76,18 +80,18 @@ function createPhonemeUI(thisObj) {
   var phonemeData = [];
   var labFile = null;
 
-  // ========== ボタングループ ==========
-  var btnGroup1 = listGroup.add("group");
-  btnGroup1.orientation = "row";
-  btnGroup1.alignment = ["fill", "bottom"];
-  btnGroup1.alignChildren = ["fill", "center"];
-  btnGroup1.spacing = 5;
+  // ========== 一括選択ボタングループ ==========
+  var phonemeSelectorGroup = phonemeListPanel.add("group");
+  phonemeSelectorGroup.orientation = "row";
+  phonemeSelectorGroup.alignment = ["fill", "bottom"];
+  phonemeSelectorGroup.alignChildren = ["fill", "center"];
+  phonemeSelectorGroup.spacing = 5;
 
-  var selectAllBtn = btnGroup1.add("button", undefined, "All");
+  var selectAllBtn = phonemeSelectorGroup.add("button", undefined, "All");
   selectAllBtn.alignment = ["fill", "center"];
-  var deselectAllBtn = btnGroup1.add("button", undefined, "None");
+  var deselectAllBtn = phonemeSelectorGroup.add("button", undefined, "None");
   deselectAllBtn.alignment = ["fill", "center"];
-  var selectCommonBtn = btnGroup1.add("button", undefined, "Common");
+  var selectCommonBtn = phonemeSelectorGroup.add("button", undefined, "Common");
   selectCommonBtn.alignment = ["fill", "center"];
 
   // ========== オフセット設定グループ ==========
@@ -269,8 +273,8 @@ function createPhonemeUI(thisObj) {
 
     // UI更新：既存のチェックボックスをクリア
     phonemeData = [];
-    for (var i = scrollGroup.children.length - 1; i >= 0; i--) {
-      scrollGroup.remove(scrollGroup.children[i]);
+    for (var i = phonemeCheckboxGroup.children.length - 1; i >= 0; i--) {
+      phonemeCheckboxGroup.remove(phonemeCheckboxGroup.children[i]);
     }
 
     // チェックボックスを横3列で配置
@@ -283,7 +287,7 @@ function createPhonemeUI(thisObj) {
 
       // 3列ごとに新しい行を作成
       if (colCount === 0) {
-        currentRow = scrollGroup.add("group");
+        currentRow = phonemeCheckboxGroup.add("group");
         currentRow.orientation = "row";
         currentRow.alignment = ["fill", "top"];
         currentRow.alignChildren = ["fill", "center"];
@@ -504,9 +508,9 @@ function createPhonemeUI(thisObj) {
       compDropdown.selection = 0;
     }
 
-    var btnGroup = dialog.add("group");
-    btnGroup.add("button", undefined, "OK", { name: "ok" });
-    btnGroup.add("button", undefined, "Cancel", { name: "cancel" });
+    var dialogBtnGroup = dialog.add("group");
+    dialogBtnGroup.add("button", undefined, "OK", { name: "ok" });
+    dialogBtnGroup.add("button", undefined, "Cancel", { name: "cancel" });
 
     if (dialog.show() !== 1) return;
     if (!compDropdown.selection) {
