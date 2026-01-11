@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.5.0
+ * @version 0.6.0
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -90,6 +90,27 @@ function createPhonemeUI(thisObj) {
   var selectCommonBtn = btnGroup1.add("button", undefined, "Common");
   selectCommonBtn.alignment = ["fill", "center"];
 
+  // ========== オフセット設定グループ ==========
+  var offsetGroup = win.add("group");
+  offsetGroup.orientation = "row";
+  offsetGroup.alignment = ["fill", "top"];
+  offsetGroup.alignChildren = ["left", "center"];
+  offsetGroup.spacing = 5;
+
+  var offsetLabel = offsetGroup.add("statictext", undefined, "Offset (ms):");
+  var offsetInput = offsetGroup.add("edittext", undefined, "-67");
+  offsetInput.preferredSize = [60, 25];
+  offsetInput.helpTip =
+    "動画先行の法則: 映像は音声より数フレーム速いほうが自然に見えます（負の値=映像先行）";
+
+  var frameMinus = offsetGroup.add("button", undefined, "<");
+  frameMinus.preferredSize = [35, 25];
+  frameMinus.helpTip = "1フレーム戻す（映像をさらに先行）";
+
+  var framePlus = offsetGroup.add("button", undefined, ">");
+  framePlus.preferredSize = [35, 25];
+  framePlus.helpTip = "1フレーム進める";
+
   // ========== 実行ボタン ==========
   var executeGroup = win.add("group");
   executeGroup.orientation = "row";
@@ -97,21 +118,88 @@ function createPhonemeUI(thisObj) {
   executeGroup.alignChildren = ["fill", "center"];
   executeGroup.spacing = 10;
 
-  var createBtn = executeGroup.add("button", undefined, "Create Phoneme Layer");
+  var createBtn = executeGroup.add("button", undefined, "Create");
   createBtn.alignment = ["fill", "center"];
   createBtn.enabled = false;
+
+  var deleteMarkersBtn = executeGroup.add("button", undefined, "Delete");
+  deleteMarkersBtn.alignment = ["fill", "center"];
 
   var setupOpacityBtn = executeGroup.add("button", undefined, "Setup Opacity");
   setupOpacityBtn.alignment = ["fill", "center"];
 
   // ========== イベントハンドラ ==========
 
+  // フレーム調整ヘルパー関数（選択レイヤーのマーカーを移動）
+  function adjustMarkersByFrames(frames) {
+    var comp = app.project.activeItem;
+    if (!comp) {
+      alert("Please select a composition");
+      return;
+    }
+
+    var layers = comp.selectedLayers;
+    if (layers.length === 0) {
+      alert("Please select layer(s) with markers");
+      return;
+    }
+
+    var frameSec = 1 / 30; // デフォルト30fps
+    if (comp.frameRate) {
+      frameSec = 1 / comp.frameRate;
+    }
+    var offsetSec = frames * frameSec;
+
+    app.beginUndoGroup("Adjust Markers");
+
+    var totalAdjusted = 0;
+    for (var i = 0; i < layers.length; i++) {
+      var layer = layers[i];
+      var markers = layer.property("Marker");
+      var numMarkers = markers.numKeys;
+
+      if (numMarkers === 0) continue;
+
+      // マーカー情報を一時保存
+      var markerData = [];
+      for (var j = 1; j <= numMarkers; j++) {
+        markerData.push({
+          time: markers.keyTime(j) + offsetSec,
+          value: markers.keyValue(j),
+        });
+      }
+
+      // 全マーカーを削除
+      for (var j = numMarkers; j >= 1; j--) {
+        markers.removeKey(j);
+      }
+
+      // 新しい時間で再配置
+      for (var j = 0; j < markerData.length; j++) {
+        markers.setValueAtTime(markerData[j].time, markerData[j].value);
+      }
+
+      totalAdjusted += numMarkers;
+    }
+
+    app.endUndoGroup();
+  }
+
+  // フレーム調整ボタン
+  frameMinus.onClick = function () {
+    adjustMarkersByFrames(-1);
+  };
+
+  framePlus.onClick = function () {
+    adjustMarkersByFrames(1);
+  };
+
   // ファイル選択
   browseBtn.onClick = function () {
     labFile = File.openDialog("Select lab file", "*.lab");
     if (!labFile) return;
 
-    filePathText.text = labFile.name;
+    filePathText.text = decodeURI(labFile.name);
 
     // labファイルをパース
     labFile.open("r");
@@ -328,14 +416,27 @@ function createPhonemeUI(thisObj) {
     // 音声レイヤーがなければヌルレイヤーを作成
     if (!targetLayer) {
       targetLayer = comp.layers.addNull(duration);
-      targetLayer.name = "Phoneme";
+      // labファイル名から拡張子を除いた名前を使用
+      var layerName = labFile
+        ? decodeURI(labFile.name).replace(/\.lab$/i, "")
+        : "Phoneme";
+      targetLayer.name = "[P] " + layerName;
       targetLayer.startTime = attachTime;
+    } else {
+      // 既存レイヤーに[P]プレフィックスがなければ追加
+      if (targetLayer.name.indexOf("[P] ") !== 0) {
+        targetLayer.name = "[P] " + targetLayer.name;
+      }
     }
+
+    // オフセット値を取得（ミリ秒→秒に変換）
+    var offsetMs = parseFloat(offsetInput.text) || 0;
+    var offsetSec = offsetMs / 1000;
 
     // マーカー配置
     for (var i = 0; i < selectedPhonemes.length; i++) {
       var markerTime =
-        attachTime + (selectedPhonemes[i].startTime - labStartTime);
+        attachTime + (selectedPhonemes[i].startTime - labStartTime) + offsetSec;
       var newMarker = new MarkerValue(selectedPhonemes[i].phoneme);
       targetLayer.property("Marker").setValueAtTime(markerTime, newMarker);
     }
@@ -390,30 +491,33 @@ function createPhonemeUI(thisObj) {
       var layer = layers[i];
 
       var exprLines = [
-        "var phonemeLayer = null;",
-        "for (var i = 1; i <= thisComp.numLayers; i++) {",
-        "  var layer = thisComp.layer(i);",
-        "  if (layer.marker.numKeys > 0 && time >= layer.inPoint && time < layer.outPoint) {",
-        "    phonemeLayer = layer;",
-        "    break;",
+        "function findPhonemeLayer() {",
+        "  for (var i = 1; i <= thisComp.numLayers; i++) {",
+        "    var layer = thisComp.layer(i);",
+        '    if (layer.name.indexOf("[P] ") !== 0) continue;',
+        "    if (layer.marker.numKeys === 0) continue;",
+        "    if (time < layer.inPoint || time >= layer.outPoint) continue;",
+        "    return layer;",
         "  }",
+        "  return null;",
         "}",
-        "var result = 0;",
-        "var phoneme = null;",
-        "if (phonemeLayer && phonemeLayer.marker.numKeys > 0) {",
+        "",
+        "function getPhoneme(phonemeLayer) {",
+        "  if (!phonemeLayer) return null;",
         "  var marker = phonemeLayer.marker;",
         "  var index = marker.nearestKey(time).index;",
         "  if (marker.key(index).time > time) index--;",
-        "  if (index >= 1) {",
-        "    phoneme = marker.key(index).comment;",
-        "  }",
+        "  if (index < 1) return null;",
+        "  return marker.key(index).comment;",
         "}",
-        "if (phoneme !== null) {",
-        '  if ((","+thisLayer.name+",").indexOf(","+phoneme+",") >= 0) result = 100;',
-        "} else {",
-        '  if ((","+thisLayer.name+",").indexOf(",def,") >= 0) result = 100;',
+        "",
+        "function matchesName(name) {",
+        '  return (","+thisLayer.name+",").indexOf(","+name+",") >= 0;',
         "}",
-        "result;",
+        "",
+        "var phonemeLayer = findPhonemeLayer();",
+        "var phoneme = getPhoneme(phonemeLayer);",
+        'phoneme !== null ? (matchesName(phoneme) ? 100 : 0) : (matchesName("def") ? 100 : 0);',
       ];
 
       var expr = exprLines.join("\n");
@@ -424,6 +528,56 @@ function createPhonemeUI(thisObj) {
 
     app.endUndoGroup();
     alert("Completed! Set expression on " + layers.length + " layers.");
+  };
+
+  // マーカー削除
+  deleteMarkersBtn.onClick = function () {
+    var comp = app.project.activeItem;
+    if (!comp) {
+      alert("Please select a composition");
+      return;
+    }
+
+    var layers = comp.selectedLayers;
+    if (layers.length === 0) {
+      alert("Please select a layer with markers");
+      return;
+    }
+
+    var totalDeleted = 0;
+
+    app.beginUndoGroup("Delete Markers");
+
+    for (var i = 0; i < layers.length; i++) {
+      var layer = layers[i];
+      var markers = layer.property("Marker");
+      var numMarkers = markers.numKeys;
+
+      // マーカーを後ろから削除（インデックスがずれないように）
+      for (var j = numMarkers; j >= 1; j--) {
+        markers.removeKey(j);
+        totalDeleted++;
+      }
+
+      // マーカーが全て削除されたら[P]プレフィックスを削除
+      if (numMarkers > 0 && layer.name.indexOf("[P] ") === 0) {
+        layer.name = layer.name.substring(4);
+      }
+    }
+
+    app.endUndoGroup();
+
+    if (totalDeleted > 0) {
+      alert(
+        "Deleted " +
+          totalDeleted +
+          " markers from " +
+          layers.length +
+          " layer(s)."
+      );
+    } else {
+      alert("No markers found on selected layer(s).");
+    }
   };
 
   // リサイズ対応
