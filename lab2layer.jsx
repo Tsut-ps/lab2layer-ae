@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.7.3
+ * @version 0.7.4
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
