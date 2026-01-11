@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.6.0
+ * @version 0.6.1
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -432,6 +432,13 @@ function createPhonemeUI(thisObj) {
     // オフセット値を取得（ミリ秒→秒に変換）
     var offsetMs = parseFloat(offsetInput.text) || 0;
     var offsetSec = offsetMs / 1000;
+
+    // 既存のマーカーを全て削除
+    var markers = targetLayer.property("Marker");
+    var numMarkers = markers.numKeys;
+    for (var i = numMarkers; i >= 1; i--) {
+      markers.removeKey(i);
+    }
 
     // マーカー配置
     for (var i = 0; i < selectedPhonemes.length; i++) {
