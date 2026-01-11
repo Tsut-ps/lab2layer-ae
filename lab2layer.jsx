@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.7.0
+ * @version 0.7.1
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -557,6 +557,9 @@ function createPhonemeUI(thisObj) {
       layer
         .property("ADBE Transform Group")
         .property("ADBE Opacity").expression = expr;
+
+      // レイヤーを表示状態にする
+      layer.enabled = true;
     }
 
     app.endUndoGroup();
