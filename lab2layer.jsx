@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.6.1
+ * @version 0.7.0
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -476,21 +476,45 @@ function createPhonemeUI(thisObj) {
       return;
     }
 
-    // マーカーを持つレイヤー存在確認
-    var markerLayerExists = false;
-    for (var i = 1; i <= comp.numLayers; i++) {
-      if (comp.layer(i).property("Marker").numKeys > 0) {
-        markerLayerExists = true;
-        break;
+    // プロジェクト内のコンポジション一覧を取得
+    var compNames = [];
+    for (var i = 1; i <= app.project.numItems; i++) {
+      var item = app.project.item(i);
+      if (item instanceof CompItem) {
+        compNames.push(item.name);
       }
     }
 
-    if (!markerLayerExists) {
-      alert(
-        "No layer with markers found! Please create phoneme markers first."
-      );
+    // コンポジション選択ダイアログ
+    var dialog = new Window("dialog", "Select Phoneme Composition");
+    dialog.orientation = "column";
+    dialog.alignChildren = ["fill", "top"];
+
+    dialog.add("statictext", undefined, "Phoneme layer location:");
+    var compDropdown = dialog.add("dropdownlist", undefined, compNames);
+
+    // 現在のコンポジションをデフォルト選択
+    for (var i = 0; i < compNames.length; i++) {
+      if (compNames[i] === comp.name) {
+        compDropdown.selection = i;
+        break;
+      }
+    }
+    if (!compDropdown.selection && compNames.length > 0) {
+      compDropdown.selection = 0;
+    }
+
+    var btnGroup = dialog.add("group");
+    btnGroup.add("button", undefined, "OK", { name: "ok" });
+    btnGroup.add("button", undefined, "Cancel", { name: "cancel" });
+
+    if (dialog.show() !== 1) return;
+    if (!compDropdown.selection) {
+      alert("Please select a composition");
       return;
     }
+
+    var targetCompName = compDropdown.selection.text;
 
     app.beginUndoGroup("Setup Phoneme Opacity");
 
@@ -498,9 +522,11 @@ function createPhonemeUI(thisObj) {
       var layer = layers[i];
 
       var exprLines = [
+        'var targetComp = comp("' + targetCompName + '");',
+        "",
         "function findPhonemeLayer() {",
-        "  for (var i = 1; i <= thisComp.numLayers; i++) {",
-        "    var layer = thisComp.layer(i);",
+        "  for (var i = 1; i <= targetComp.numLayers; i++) {",
+        "    var layer = targetComp.layer(i);",
         '    if (layer.name.indexOf("[P] ") !== 0) continue;',
         "    if (layer.marker.numKeys === 0) continue;",
         "    if (time < layer.inPoint || time >= layer.outPoint) continue;",
@@ -534,7 +560,12 @@ function createPhonemeUI(thisObj) {
     }
 
     app.endUndoGroup();
-    alert("Completed! Set expression on " + layers.length + " layers.");
+    alert(
+      "Completed! Set expression on " +
+        layers.length +
+        " layers.\nPhoneme source: " +
+        targetCompName
+    );
   };
 
   // マーカー削除
