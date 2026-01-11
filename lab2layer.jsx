@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.4.0
+ * @version 0.5.0
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -307,36 +307,51 @@ function createPhonemeUI(thisObj) {
     var labEndTime = selectedPhonemes[selectedPhonemes.length - 1].endTime;
     var duration = labEndTime - labStartTime;
 
-    // 現在の再生位置を取得
-    var currentTime = comp.time;
+    // 選択されたレイヤーがあればそれに直接マーカーを追加、なければヌルレイヤーを作成
+    var selectedLayers = comp.selectedLayers;
+    var targetLayer = null;
+    var attachTime = comp.time;
+
+    // 選択レイヤーから音声/映像レイヤーを探す
+    for (var i = 0; i < selectedLayers.length; i++) {
+      var layer = selectedLayers[i];
+      // 音声レイヤーまたはAVレイヤー（映像付き音声）を探す
+      if (layer.hasAudio || layer.source instanceof FootageItem) {
+        targetLayer = layer;
+        attachTime = layer.inPoint;
+        break;
+      }
+    }
 
     app.beginUndoGroup("Create Phoneme Layer");
 
-    // ヌルレイヤー作成（現在の再生位置に配置）
-    var nullLayer = comp.layers.addNull(duration);
-    nullLayer.name = "Phoneme";
-    nullLayer.startTime = currentTime;
+    // 音声レイヤーがなければヌルレイヤーを作成
+    if (!targetLayer) {
+      targetLayer = comp.layers.addNull(duration);
+      targetLayer.name = "Phoneme";
+      targetLayer.startTime = attachTime;
+    }
 
-    // マーカー配置（現在の再生位置からの相対位置）
+    // マーカー配置
     for (var i = 0; i < selectedPhonemes.length; i++) {
       var markerTime =
-        currentTime + (selectedPhonemes[i].startTime - labStartTime);
+        attachTime + (selectedPhonemes[i].startTime - labStartTime);
       var newMarker = new MarkerValue(selectedPhonemes[i].phoneme);
-      nullLayer.property("Marker").setValueAtTime(markerTime, newMarker);
+      targetLayer.property("Marker").setValueAtTime(markerTime, newMarker);
     }
 
     app.endUndoGroup();
 
-    alert(
-      "Phoneme layer created with " +
-        selectedPhonemes.length +
-        " markers!\n" +
-        "Duration: " +
-        duration.toFixed(2) +
-        "s at " +
-        currentTime.toFixed(2) +
-        "s"
-    );
+    var message =
+      "Phoneme markers added: " +
+      selectedPhonemes.length +
+      "\n" +
+      "Duration: " +
+      duration.toFixed(2) +
+      "s\n" +
+      "Target: " +
+      targetLayer.name;
+    alert(message);
   };
 
   // 不透明度設定
@@ -353,17 +368,19 @@ function createPhonemeUI(thisObj) {
       return;
     }
 
-    // Phonemeレイヤー存在確認
-    var phonemeLayerExists = false;
+    // マーカーを持つレイヤー存在確認
+    var markerLayerExists = false;
     for (var i = 1; i <= comp.numLayers; i++) {
-      if (comp.layer(i).name === "Phoneme") {
-        phonemeLayerExists = true;
+      if (comp.layer(i).property("Marker").numKeys > 0) {
+        markerLayerExists = true;
         break;
       }
     }
 
-    if (!phonemeLayerExists) {
-      alert("Phoneme layer not found! Please create it first.");
+    if (!markerLayerExists) {
+      alert(
+        "No layer with markers found! Please create phoneme markers first."
+      );
       return;
     }
 
@@ -376,7 +393,7 @@ function createPhonemeUI(thisObj) {
         "var phonemeLayer = null;",
         "for (var i = 1; i <= thisComp.numLayers; i++) {",
         "  var layer = thisComp.layer(i);",
-        '  if (layer.name === "Phoneme" && time >= layer.inPoint && time < layer.outPoint) {',
+        "  if (layer.marker.numKeys > 0 && time >= layer.inPoint && time < layer.outPoint) {",
         "    phonemeLayer = layer;",
         "    break;",
         "  }",
