@@ -1,6 +1,6 @@
 /**
  * lab2layer
- * @version 0.7.4
+ * @version 0.7.5
  * @author Tsut-ps
  * @description labファイルを解析して音素レイヤーを生成 + 不透明度エクスプレッションを設定するツール
  */
@@ -14,7 +14,7 @@ function createPhonemeUI(thisObj) {
   win.orientation = "column";
   win.alignChildren = ["fill", "top"];
   win.spacing = 10;
-  win.margins = 16;
+  win.margins = 8;
 
   // ========== ファイル選択グループ ==========
   var fileSelectGroup = win.add("group");
@@ -22,7 +22,7 @@ function createPhonemeUI(thisObj) {
   fileSelectGroup.alignChildren = ["left", "center"];
   fileSelectGroup.alignment = ["fill", "top"];
 
-  var fileLabel = fileSelectGroup.add("statictext", undefined, "Lab File:");
+  fileSelectGroup.add("statictext", undefined, "Lab File:");
 
   var filePathText = fileSelectGroup.add(
     "edittext",
@@ -41,7 +41,7 @@ function createPhonemeUI(thisObj) {
   var phonemeListPanel = win.add("panel", undefined, "Select Phonemes");
   phonemeListPanel.orientation = "column";
   phonemeListPanel.alignChildren = ["fill", "top"];
-  phonemeListPanel.alignment = ["fill", "fill"];
+  phonemeListPanel.alignment = ["fill", "top"];
   phonemeListPanel.spacing = 5;
   phonemeListPanel.margins = 10;
   phonemeListPanel.minimumSize = [200, 150];
@@ -114,17 +114,21 @@ function createPhonemeUI(thisObj) {
   offsetGroup.spacing = 5;
 
   var offsetLabel = offsetGroup.add("statictext", undefined, "Offset (ms):");
+  offsetLabel.alignment = ["left", "center"];
+
   var offsetInput = offsetGroup.add("edittext", undefined, "-67");
-  offsetInput.preferredSize = [60, 25];
+  offsetInput.alignment = ["fill", "center"];
   offsetInput.helpTip =
     "動画先行の法則: 映像は音声より数フレーム速いほうが自然に見えます（負の値=映像先行）";
 
   var frameMinus = offsetGroup.add("button", undefined, "<");
   frameMinus.preferredSize = [35, 25];
+  frameMinus.alignment = ["right", "center"];
   frameMinus.helpTip = "1フレーム戻す（映像をさらに先行）";
 
   var framePlus = offsetGroup.add("button", undefined, ">");
   framePlus.preferredSize = [35, 25];
+  framePlus.alignment = ["right", "center"];
   framePlus.helpTip = "1フレーム進める";
 
   // ========== 実行ボタン ==========
